@@ -6,11 +6,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
-public class MpegFileWatcher {
+public class JpegFilePrinter {
 
     private final String filename;
+    private static String NEWLINE = "\r\n";
 
-    public MpegFileWatcher(String filename) {
+    public JpegFilePrinter(String filename) {
         this.filename = filename;
     }
 
@@ -23,23 +24,23 @@ public class MpegFileWatcher {
             // do nothing
             return;
         }
-        out.print("--" + separator);
-        out.print("\r\n");
-        out.print("Content-Type: image/jpeg\r\n");
-        out.print("Content-Length: " + bytes.length + "\r\n");
-        out.print("\r\n");
+        out.print("--" + separator + NEWLINE);
+        out.print("Content-Type: image/jpeg" + NEWLINE);
+        out.print("Content-Length: " + bytes.length + NEWLINE);
+        out.print(NEWLINE);
         out.write(bytes);
-        out.print("\r\n");
-        out.print("--" + separator);
+        out.print(NEWLINE);
+        out.flush();
     }
 
     private byte[] readfile() throws IOException {
-        File f = new File(filename);
-        byte[] result = new byte[(int) f.length()];
-        FileInputStream fis = new FileInputStream(f);
-        fis.read(result);
-        fis.close();
+        byte[] result;
 
+        File f = new File(filename);
+        result = new byte[(int) f.length()];
+        try (FileInputStream fis = new FileInputStream(f)) {
+            fis.read(result);
+        }
         return result;
 
     }
