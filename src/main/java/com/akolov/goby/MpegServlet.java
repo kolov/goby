@@ -1,5 +1,6 @@
 package com.akolov.goby;
 
+import com.akolov.notipy.Mode;
 import com.akolov.notipy.Notipy;
 import com.akolov.notipy.NullListener;
 
@@ -23,11 +24,15 @@ public class MpegServlet extends HttpServlet {
     private String fileFolder;
 
     private JpegFilePrinter watcher;
+    private Mode notipyMode = null;
 
 
     @Override
     public void init() {
         Properties props = new Configuration().readProperties();
+
+        notipyMode = Mode.valueOf(props.getProperty("notipy.mode", Mode.SCAN.toString()));
+
         fullFilePath = props.getProperty("filename");
         if (fullFilePath == null) {
             throw new RuntimeException("Cant initialize");
@@ -51,7 +56,7 @@ public class MpegServlet extends HttpServlet {
         ServletOutputStream out = aCtx.getResponse().getOutputStream();
         watcher.writeFile(out, BOUNDARY);
 
-        new Notipy().addWatch(fileFolder, Notipy.FILE_MODIFIED, false, new MpegListener(aCtx, fullFilePath, watcher));
+        new Notipy(notipyMode).addWatch(fileFolder, Notipy.FILE_MODIFIED, false, new MpegListener(aCtx, fullFilePath, watcher));
     }
 
     private static class MpegListener extends NullListener {
