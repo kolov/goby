@@ -5,6 +5,8 @@ import com.akolov.notipy.Notipy;
 import com.akolov.notipy.NullListener;
 
 import javax.servlet.AsyncContext;
+import javax.servlet.AsyncEvent;
+import javax.servlet.AsyncListener;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -12,19 +14,27 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @WebServlet(name = "mpegServlet",
         urlPatterns = {"/mpeg"}, asyncSupported = true)
 public class MpegServlet extends HttpServlet {
 
+    private static final Logger LOG = Logger.getLogger(MpegServlet.class.getName());
+
     private static final String BOUNDARY = "lysmata";
 
     private String fullFilePath;
     private String fileFolder;
+    private String fileName;
 
     private JpegFilePrinter watcher;
     private Mode notipyMode = null;
+    private List<AsyncContext> contexts = new ArrayList<>();
 
 
     @Override
@@ -39,10 +49,12 @@ public class MpegServlet extends HttpServlet {
         }
         int lastSeparator = fullFilePath.lastIndexOf(File.separator);
         fileFolder = fullFilePath.substring(0, lastSeparator);
+        fileName = fullFilePath.substring(lastSeparator + 1);
 
-        watcher = new JpegFilePrinter(fullFilePath);
+        watcher = new JpegFilePrinter(fullFilePath, BOUNDARY);
+        Notipy.getInstance(notipyMode).addWatch(fileFolder, Notipy.FILE_MODIFIED, false, new MpegListener(contexts,
+                fileName, watcher));
     }
-
 
 
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -53,19 +65,43 @@ public class MpegServlet extends HttpServlet {
         response.setHeader("Connection", "close");
 
         final AsyncContext aCtx = request.startAsync(request, response);
-        ServletOutputStream out = aCtx.getResponse().getOutputStream();
-        watcher.writeFile(out, BOUNDARY);
 
-        new Notipy(notipyMode).addWatch(fileFolder, Notipy.FILE_MODIFIED, false, new MpegListener(aCtx, fullFilePath, watcher));
+        aCtx.addListener(new AsyncListener() {
+            @Override
+            public void onComplete(AsyncEvent asyncEvent) throws IOException {
+                contexts.remove(asyncEvent.getAsyncContext());
+            }
+
+            @Override
+            public void onTimeout(AsyncEvent asyncEvent) throws IOException {
+
+            }
+
+            @Override
+            public void onError(AsyncEvent asyncEvent) throws IOException {
+
+            }
+
+            @Override
+            public void onStartAsync(AsyncEvent asyncEvent) throws IOException {
+
+            }
+        });
+        ServletOutputStream out = aCtx.getResponse().getOutputStream();
+        watcher.writeFile(out);
+
+        contexts.add(aCtx);
+
+
     }
 
     private static class MpegListener extends NullListener {
-        private final AsyncContext aCtx;
+        private List<AsyncContext> contexts;
         private final JpegFilePrinter watcher;
         private final String filename;
 
-        public MpegListener(AsyncContext aCtx, String filename, JpegFilePrinter watcher) {
-            this.aCtx = aCtx;
+        public MpegListener(List<AsyncContext> contexts, String filename, JpegFilePrinter watcher) {
+            this.contexts = contexts;
             this.filename = filename;
             this.watcher = watcher;
         }
@@ -75,17 +111,29 @@ public class MpegServlet extends HttpServlet {
             if (!name.equals(filename)) {
                 return;
             }
-            try {
-                ServletOutputStream out = aCtx.getResponse().getOutputStream();
-                watcher.writeFile(out, BOUNDARY);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            sendUpdatedFiel();
+        }
+
+        private void sendUpdatedFiel() {
+            contexts.stream().forEach(
+                    ctx -> {
+                        try {
+                            watcher.writeFile(ctx.getResponse().getOutputStream());
+                        } catch (IOException e) {
+                            LOG.log(Level.WARNING, e.getMessage());
+                        }
+                    }
+            );
+
         }
 
         @Override
-        public void fileRenamed(int wd, String s, String s1, String s2) {
-
+        public void fileRenamed(int wd, String root, String oldName, String newName) {
+            if (newName.equals(filename)) {
+                LOG.log(Level.FINE, "Skipping rename " + oldName + "->" + newName);
+                return;
+            }
+            sendUpdatedFiel();
         }
 
     }

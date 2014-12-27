@@ -10,12 +10,14 @@ public class JpegFilePrinter {
 
     private final String filename;
     private static String NEWLINE = "\r\n";
+    private String boundary;
 
-    public JpegFilePrinter(String filename) {
+    public JpegFilePrinter(String filename, String boundary) {
         this.filename = filename;
+        this.boundary = boundary;
     }
 
-    public void writeFile(ServletOutputStream out, String separator) throws IOException {
+    public void writeFile(ServletOutputStream out) throws IOException {
         byte[] bytes;
 
         try {
@@ -24,7 +26,7 @@ public class JpegFilePrinter {
             // do nothing
             return;
         }
-        out.print("--" + separator + NEWLINE);
+        out.print("--" + boundary + NEWLINE);
         out.print("Content-Type: image/jpeg" + NEWLINE);
         out.print("Content-Length: " + bytes.length + NEWLINE);
         out.print(NEWLINE);
