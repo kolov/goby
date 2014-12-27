@@ -11,7 +11,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Properties;
 
 @WebServlet(name = "mpegServlet",
@@ -22,38 +21,24 @@ public class MpegServlet extends HttpServlet {
 
     private String fullFilePath;
     private String fileFolder;
-    private String fileName;
 
     private JpegFilePrinter watcher;
 
 
     @Override
     public void init() {
-        Properties props = readProperties();
+        Properties props = new Configuration().readProperties();
         fullFilePath = props.getProperty("filename");
         if (fullFilePath == null) {
             throw new RuntimeException("Cant initialize");
         }
         int lastSeparator = fullFilePath.lastIndexOf(File.separator);
         fileFolder = fullFilePath.substring(0, lastSeparator);
-        fileName = fullFilePath.substring(lastSeparator + 1);
 
         watcher = new JpegFilePrinter(fullFilePath);
     }
 
-    private Properties readProperties() {
-        Properties props = new Properties();
-        InputStream is = MpegServlet.class.getResourceAsStream("/goby.properties");
-        if (is == null) {
-            throw new RuntimeException("No goby.properties found on class path");
-        }
-        try {
-            props.load(is);
-        } catch (IOException e) {
-            throw new RuntimeException("Cant initialize from /goby.properties");
-        }
-        return props;
-    }
+
 
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         response.setStatus(200);
