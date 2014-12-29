@@ -52,7 +52,7 @@ public class MpegServlet extends HttpServlet {
         fileName = fullFilePath.substring(lastSeparator + 1);
 
         watcher = new JpegFilePrinter(fullFilePath, BOUNDARY);
-        Notipy.getInstance(notipyMode).addWatch(fileFolder, Notipy.FILE_MODIFIED, false, new MpegListener(contexts,
+        Notipy.getInstance(notipyMode).addWatch(fileFolder, Notipy.FILE_MODIFIED | Notipy.FILE_RENAMED, false, new MpegListener(contexts,
                 fileName, watcher));
     }
 
@@ -129,8 +129,7 @@ public class MpegServlet extends HttpServlet {
 
         @Override
         public void fileRenamed(int wd, String root, String oldName, String newName) {
-            System.out.print("Renamed " + root + ": " + oldName + "->" + newName);
-            if (newName.equals(filename)) {
+            if (!newName.equals(filename)) {
                 LOG.log(Level.FINE, "Skipping rename " + oldName + "->" + newName);
                 return;
             }

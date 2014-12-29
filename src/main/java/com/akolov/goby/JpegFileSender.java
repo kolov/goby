@@ -6,13 +6,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
-public class JpegFilePrinter {
+public class JpegFileSender {
 
     private final String filename;
     private static String NEWLINE = "\r\n";
     private String boundary;
 
-    public JpegFilePrinter(String filename, String boundary) {
+    public JpegFileSender(String filename, String boundary) {
         this.filename = filename;
         this.boundary = boundary;
     }
