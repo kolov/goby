@@ -22,6 +22,6 @@ Is it good?
 ====
 The speed whith which *raspistill* is taking snapshots is disappointing, I hope it is possible to build something nicer with *raspivid*. As it is now, it is good enoight for a surveillance application but nothing more. 
 
-Why Goby?
+Goby?
 ====
 That's him: A yellow goby is inhabitant #3 of the tank: ![goby](http://upload.wikimedia.org/wikipedia/commons/thumb/9/98/Gobidon_okinawae1.jpg/500px-Gobidon_okinawae1.jpg)
