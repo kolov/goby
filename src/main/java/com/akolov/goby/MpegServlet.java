@@ -129,6 +129,7 @@ public class MpegServlet extends HttpServlet {
 
         @Override
         public void fileRenamed(int wd, String root, String oldName, String newName) {
+            System.out.print("Renamed " + root + ": " + oldName + "->" + newName);
             if (newName.equals(filename)) {
                 LOG.log(Level.FINE, "Skipping rename " + oldName + "->" + newName);
                 return;
