@@ -7,7 +7,7 @@ Why
 ====
 
 I bought a Raspberry Pi with a camera and I expected it would be easy to stream an image of my reef tank from 
-the camera using Java. I found no Java way to do this, only one full application with UI, http server and everything: [mjpg-streamer](http://sourceforge.net/projects/mjpg-streamer/). Still, as I found no way to embed the stream in my own app I started this project. See it for yourself: now and then, the Pi's camera will be pointed to the aquarium and *Goby* will be running and accessible at <http://192.168.0.14:8080/goby/>. Everything runs at the Pi, so I don't expect to many concurrent request could be served.
+the camera using Java. I found no Java way to do this, only one full application with UI, http server and everything: [mjpg-streamer](http://sourceforge.net/projects/mjpg-streamer/). Still, as I found no way to embed the stream in my own app I started this project. See it for yourself: now and then, the Pi's camera will be pointed to the aquarium and *Goby* will be running and accessible at <http://92.110.20.2:8090/goby/>. Everything runs at the Pi, so don't expect it to serve too many concurrent request graciously.
 
 How it works
 ====
