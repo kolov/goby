@@ -16,10 +16,10 @@ At certain moments, the Raspberry Pi will be pointed to the aquarium and *Goby* 
 How it works
 ====
 
-The Raspberry Pi camera can be controlled with raspstill. This
+The Raspberry Pi camera can be controlled with raspstill. This command:
 
     raspistill --nopreview -w 640 -h 480 -q 55 -o /var/vid/pic.jpg -tl 100 -t 9999999 -th 0:0:0 &
-stores a camera snapshot each 100ms in the same file /var/vid/pic.jpg. On my py, it is mor like 500ms, I am not sure exactly why. The hard part was to get notified on update: 
+makes the camera store a fresh snapshot each 100ms in the same file /var/vid/pic.jpg. On my pi, it is more like 500ms, I am not sure exactly why. The hard part was to get notified on update. Linux' inotify 
 see [notipy](https://github.com/kolov/notipy). The image is served as multipart/x-mixed-replace and a new version streamed each time the file is rewritten. 
 
 
