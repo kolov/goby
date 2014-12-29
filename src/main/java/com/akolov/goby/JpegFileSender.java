@@ -1,10 +1,12 @@
 package com.akolov.goby;
 
 
+import javax.servlet.AsyncContext;
 import javax.servlet.ServletOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.List;
 
 public class JpegFileSender {
 
@@ -12,12 +14,14 @@ public class JpegFileSender {
     private static String NEWLINE = "\r\n";
     private String boundary;
 
+
     public JpegFileSender(String filename, String boundary) {
         this.filename = filename;
         this.boundary = boundary;
     }
 
-    public void writeFile(ServletOutputStream out) throws IOException {
+
+    public void writeFile(List<AsyncContext> clients) {
         byte[] bytes;
 
         try {
@@ -26,13 +30,21 @@ public class JpegFileSender {
             // do nothing
             return;
         }
-        out.print("--" + boundary + NEWLINE);
-        out.print("Content-Type: image/jpeg" + NEWLINE);
-        out.print("Content-Length: " + bytes.length + NEWLINE);
-        out.print(NEWLINE);
-        out.write(bytes);
-        out.print(NEWLINE);
-        out.flush();
+        clients.stream().forEach(
+                client -> {
+                    try {
+                        ServletOutputStream out = client.getResponse().getOutputStream();
+                        out.print("--" + boundary + NEWLINE);
+                        out.print("Content-Type: image/jpeg" + NEWLINE);
+                        out.print("Content-Length: " + bytes.length + NEWLINE);
+                        out.print(NEWLINE);
+                        out.write(bytes);
+                        out.print(NEWLINE);
+                        out.flush();
+                    } catch (IOException e) {
+                        // nothing
+                    }
+                });
     }
 
     private byte[] readfile() throws IOException {

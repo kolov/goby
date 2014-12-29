@@ -7,16 +7,16 @@ import com.akolov.notipy.NullListener;
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
-import javax.servlet.ServletOutputStream;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -32,9 +32,9 @@ public class MpegServlet extends HttpServlet {
     private String fileFolder;
     private String fileName;
 
-    private JpegFilePrinter watcher;
+    private JpegFileSender watcher;
     private Mode notipyMode = null;
-    private List<AsyncContext> contexts = new ArrayList<>();
+    private List<AsyncContext> contexts = new CopyOnWriteArrayList<>();
 
 
     @Override
@@ -51,7 +51,7 @@ public class MpegServlet extends HttpServlet {
         fileFolder = fullFilePath.substring(0, lastSeparator);
         fileName = fullFilePath.substring(lastSeparator + 1);
 
-        watcher = new JpegFilePrinter(fullFilePath, BOUNDARY);
+        watcher = new JpegFileSender(fullFilePath, BOUNDARY);
         Notipy.getInstance(notipyMode).addWatch(fileFolder, Notipy.FILE_MODIFIED | Notipy.FILE_RENAMED, false, new MpegListener(contexts,
                 fileName, watcher));
     }
@@ -68,27 +68,26 @@ public class MpegServlet extends HttpServlet {
 
         aCtx.addListener(new AsyncListener() {
             @Override
-            public void onComplete(AsyncEvent asyncEvent) throws IOException {
+            public void onComplete(AsyncEvent asyncEvent) {
                 contexts.remove(asyncEvent.getAsyncContext());
             }
 
             @Override
-            public void onTimeout(AsyncEvent asyncEvent) throws IOException {
-
+            public void onTimeout(AsyncEvent asyncEvent) {
+                contexts.remove(asyncEvent.getAsyncContext());
             }
 
             @Override
-            public void onError(AsyncEvent asyncEvent) throws IOException {
-
+            public void onError(AsyncEvent asyncEvent) {
+                contexts.remove(asyncEvent.getAsyncContext());
             }
 
             @Override
-            public void onStartAsync(AsyncEvent asyncEvent) throws IOException {
+            public void onStartAsync(AsyncEvent asyncEvent) {
 
             }
         });
-        ServletOutputStream out = aCtx.getResponse().getOutputStream();
-        watcher.writeFile(out);
+        watcher.writeFile(Arrays.asList(aCtx));
 
         contexts.add(aCtx);
 
@@ -97,10 +96,10 @@ public class MpegServlet extends HttpServlet {
 
     private static class MpegListener extends NullListener {
         private List<AsyncContext> contexts;
-        private final JpegFilePrinter watcher;
+        private final JpegFileSender watcher;
         private final String filename;
 
-        public MpegListener(List<AsyncContext> contexts, String filename, JpegFilePrinter watcher) {
+        public MpegListener(List<AsyncContext> contexts, String filename, JpegFileSender watcher) {
             this.contexts = contexts;
             this.filename = filename;
             this.watcher = watcher;
@@ -111,21 +110,9 @@ public class MpegServlet extends HttpServlet {
             if (!name.equals(filename)) {
                 return;
             }
-            sendUpdatedFiel();
+            watcher.writeFile(contexts);
         }
 
-        private void sendUpdatedFiel() {
-            contexts.stream().forEach(
-                    ctx -> {
-                        try {
-                            watcher.writeFile(ctx.getResponse().getOutputStream());
-                        } catch (IOException e) {
-                            LOG.log(Level.WARNING, e.getMessage());
-                        }
-                    }
-            );
-
-        }
 
         @Override
         public void fileRenamed(int wd, String root, String oldName, String newName) {
@@ -133,7 +120,7 @@ public class MpegServlet extends HttpServlet {
                 LOG.log(Level.FINE, "Skipping rename " + oldName + "->" + newName);
                 return;
             }
-            sendUpdatedFiel();
+            watcher.writeFile(contexts);
         }
 
     }
