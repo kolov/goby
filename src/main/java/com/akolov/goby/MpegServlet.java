@@ -3,6 +3,8 @@ package com.akolov.goby;
 import com.akolov.notipy.Mode;
 import com.akolov.notipy.Notipy;
 import com.akolov.notipy.NullListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
@@ -17,14 +19,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @WebServlet(name = "mpegServlet",
         urlPatterns = {"/mpeg"}, asyncSupported = true)
 public class MpegServlet extends HttpServlet {
 
-    private static final Logger LOG = Logger.getLogger(MpegServlet.class.getName());
+    private static final Logger LOG = LoggerFactory.getLogger(MpegServlet.class);
 
     private static final String BOUNDARY = "lysmata";
 
@@ -65,21 +65,29 @@ public class MpegServlet extends HttpServlet {
         response.setHeader("Connection", "close");
 
         final AsyncContext aCtx = request.startAsync(request, response);
+        contexts.add(aCtx);
+        LOG.info("Added {}, total number of contexts is {}", request.getRemoteAddr(), contexts.size());
 
         aCtx.addListener(new AsyncListener() {
             @Override
             public void onComplete(AsyncEvent asyncEvent) {
                 contexts.remove(asyncEvent.getAsyncContext());
+                LOG.info("Client {} is complete, total number of contexts is {}", asyncEvent.getAsyncContext()
+                        .getRequest().getRemoteAddr(), contexts.size());
             }
 
             @Override
             public void onTimeout(AsyncEvent asyncEvent) {
                 contexts.remove(asyncEvent.getAsyncContext());
+                LOG.info("Client {} timeout, total number of contexts is {}", asyncEvent.getAsyncContext()
+                        .getRequest().getRemoteAddr(), contexts.size());
             }
 
             @Override
             public void onError(AsyncEvent asyncEvent) {
                 contexts.remove(asyncEvent.getAsyncContext());
+                LOG.info("Client {}error, total number of contexts is {}", asyncEvent.getAsyncContext()
+                        .getRequest().getRemoteAddr(), contexts.size());
             }
 
             @Override
@@ -88,8 +96,6 @@ public class MpegServlet extends HttpServlet {
             }
         });
         watcher.writeFile(Arrays.asList(aCtx));
-
-        contexts.add(aCtx);
 
 
     }
@@ -117,7 +123,7 @@ public class MpegServlet extends HttpServlet {
         @Override
         public void fileRenamed(int wd, String root, String oldName, String newName) {
             if (!newName.equals(filename)) {
-                LOG.log(Level.FINE, "Skipping rename " + oldName + "->" + newName);
+                LOG.debug("Skipping rename " + oldName + "->" + newName);
                 return;
             }
             watcher.writeFile(contexts);
