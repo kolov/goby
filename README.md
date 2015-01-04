@@ -14,7 +14,7 @@ How it works
 
 The Raspberry Pi camera can be controlled with raspstill. This command:
 
-    raspistill --nopreview -w 640 -h 480 -q 55 -o /var/vid/pic.jpg -tl 100 -t 2147483647 -th 0:0:0 &
+    raspistill --nopreview -w 640 -h 480 -q 55 -o /var/vid/pic.jpg -tl 100 -t 2147483647 -th none > /dev/null 2>&1&
 makes the camera store a fresh snapshot each 100ms in the same file /var/vid/pic.jpg. On my pi, it is more like 500ms, I am not sure exactly why. The hard part was to get notified on update. Linux' inotify does the job but it wasn't directly usable on the Pi, 
 see [notipy](https://github.com/kolov/notipy). The image is served as multipart/x-mixed-replace and a new version streamed each time the file is rewritten. The application need an asynchronous Servlet 3.1 container, has been tested with Jetty 9.
 
